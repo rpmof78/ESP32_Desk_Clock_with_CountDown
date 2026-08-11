@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Desk Countdown Clock</title>
+  <link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">WaveShare ESP32-S3 Touch LCD 3.5</p>
+        <h1>Desk Countdown Clock</h1>
+      </div>
+      <span id="connectionBadge" class="badge pending">Connecting</span>
+    </header>
+
+    <div id="message" class="notice success hidden" role="status"></div>
+    <div id="errorMessage" class="notice error hidden" role="alert"></div>
+
+    <section class="card" aria-labelledby="statusHeading">
+      <h2 id="statusHeading">Status</h2>
+      <div class="status-grid">
+        <div class="status-item"><span>Device time</span><strong id="deviceTime">Loading…</strong></div>
+        <div class="status-item"><span>Power</span><strong id="powerStatus">Loading…</strong></div>
+        <div class="status-item"><span>Display</span><strong id="displayStatus">Loading…</strong></div>
+        <div class="status-item wide"><span>Network</span><strong id="networkStatus">Loading…</strong></div>
+        <div class="status-item"><span>Battery</span><strong id="batteryStatus">Loading…</strong></div>
+        <div class="status-item"><span>System temperature</span><strong id="systemTempStatus">Loading…</strong></div>
+        <div class="status-item"><span>Ambient light</span><strong id="luxStatus">Loading…</strong></div>
+        <div class="status-item"><span>Speaker alert</span><strong id="speakerStatus">Loading…</strong></div>
+      </div>
+      <div id="backgroundPreview" class="background-preview hidden">
+        <img id="backgroundImage" alt="Current display background preview">
+        <p>Current background: <strong id="currentBackground">None</strong></p>
+      </div>
+    </section>
+
+    <form id="settingsForm" method="POST" action="/save">
+      <section class="card">
+        <h2>Countdown target</h2>
+        <div class="form-grid six">
+          <label>Year<input type="number" name="ty" min="2024" max="2100" required></label>
+          <label>Month<input type="number" name="tmo" min="1" max="12" required></label>
+          <label>Day<input type="number" name="td" min="1" max="31" required></label>
+          <label>Hour<input type="number" name="th" min="0" max="23" required></label>
+          <label>Minute<input type="number" name="tmi" min="0" max="59" required></label>
+          <label>Second<input type="number" name="ts" min="0" max="59" required></label>
+        </div>
+        <label>Countdown footer text<input type="text" name="eventText" maxlength="47"></label>
+        <label>Timezone preset
+          <select id="timezonePreset">
+            <option value="EST5EDT,M3.2.0/2,M11.1.0/2">US Eastern</option>
+            <option value="CST6CDT,M3.2.0/2,M11.1.0/2">US Central</option>
+            <option value="MST7MDT,M3.2.0/2,M11.1.0/2">US Mountain</option>
+            <option value="MST7">US Arizona</option>
+            <option value="PST8PDT,M3.2.0/2,M11.1.0/2">US Pacific</option>
+            <option value="AKST9AKDT,M3.2.0/2,M11.1.0/2">US Alaska</option>
+            <option value="HST10">US Hawaii</option>
+            <option value="UTC0">UTC</option>
+            <option value="">Other / Custom</option>
+          </select>
+        </label>
+        <label>Timezone (POSIX TZ string)<input type="text" name="tz" required></label>
+      </section>
+
+      <section class="card">
+        <h2>Network</h2>
+        <label>Hostname
+          <input type="text" id="hostnameInput" name="hostnameDisplay" maxlength="32"
+                 pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,30}[A-Za-z0-9])?"
+                 autocomplete="off" spellcheck="false" required>
+        </label>
+        <p class="help">Letters, numbers, and hyphens only; 1–32 characters; no leading or trailing hyphen. Uppercase is saved as lowercase. Enter the name without <code>.local</code>.</p>
+        <div class="button-row">
+          <button type="button" id="saveHostnameButton" class="primary">Save and Reboot</button>
+          <span id="hostnameMessage" class="help"></span>
+        </div>
+        <hr>
+        <label>Address mode
+          <select name="netMode">
+            <option value="dhcp">DHCP</option>
+            <option value="static">Static</option>
+          </select>
+        </label>
+        <div class="form-grid two">
+          <label>Static IP address<input type="text" name="netIp" inputmode="decimal" required></label>
+          <label>Gateway<input type="text" name="netGateway" inputmode="decimal" required></label>
+          <label>Subnet mask<input type="text" name="netSubnet" inputmode="decimal" required></label>
+          <label>Primary DNS<input type="text" name="netDns1" inputmode="decimal" required></label>
+          <label>Secondary DNS<input type="text" name="netDns2" inputmode="decimal" required></label>
+        </div>
+        <p class="help">Changing IP settings causes an automatic reboot.</p>
+      </section>
+
+      <section class="card">
+        <h2>Network time</h2>
+        <div class="form-grid two">
+          <label>Primary NTP server<input type="text" name="ntp1" maxlength="63" required></label>
+          <label>Secondary NTP server<input type="text" name="ntp2" maxlength="63" required></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Display and ambient light</h2>
+        <div class="form-grid two">
+          <label>Dim brightness (%)<input type="number" name="dim" min="0" max="100" required></label>
+          <label>Idle seconds before dimming<input type="number" name="idle" min="1" max="3600" required></label>
+          <label>Clock time format
+            <select name="timefmt"><option value="24">24-hour</option><option value="12">12-hour (AM/PM)</option></select>
+          </label>
+          <label>Dim below (lux)<input type="number" name="dimLux" min="0" step="0.1" required></label>
+          <label>Undim above (lux)<input type="number" name="undimLux" min="0" step="0.1" required></label>
+        </div>
+        <p class="help">The VEML7700 thresholds use hysteresis: the undim value must remain above the dim value.</p>
+      </section>
+
+      <section class="card">
+        <h2>Speaker audio</h2>
+        <div class="form-grid two">
+          <label>Speaker alert
+            <select name="buzzEnabled"><option value="1">Enabled</option><option value="0">Disabled</option></select>
+          </label>
+          <label>Saved mute state
+            <select name="speakerMuted"><option value="0">Unmuted</option><option value="1">Muted</option></select>
+          </label>
+          <label>Alarm at (°C)<input type="number" name="buzzTripC" step="0.5" required></label>
+          <label>Clear below (°C)<input type="number" name="buzzClearC" step="0.5" required></label>
+        </div>
+        <div class="speaker-actions">
+          <button type="button" id="speakerMuteButton" class="secondary">Mute speaker</button>
+          <span id="speakerActionMessage" class="help"></span>
+        </div>
+        <p class="help">System Temperature is measured by the onboard 10 kΩ PCB NTC connected to the AXP2101 TS input. The ES8311 speaker repeats /audio/system_temp_alert.wav during a temperature alarm and plays /audio/countdown_complete.wav once when the countdown reaches its target. Mute silences both sounds; disabling prevents all speaker playback.</p>
+      </section>
+
+      <div class="sticky-save"><button type="submit" class="primary">Save settings</button></div>
+    </form>
+
+    <section class="card" id="backgroundCard">
+      <h2>Backgrounds</h2>
+      <form method="POST" action="/selectBackground" id="backgroundSelectForm">
+        <div id="backgroundList" class="background-list"><p class="help">Loading backgrounds…</p></div>
+        <button type="submit">Use selected background</button>
+      </form>
+
+      <div class="section-divider"></div>
+      <h3>Auto-rotation</h3>
+      <form method="POST" action="/saveBgRotation">
+        <div class="form-grid two">
+          <label>Mode<select name="bgMode"><option value="static">Static</option><option value="rotate">Rotate</option></select></label>
+          <label>Interval (minutes)<input type="number" name="bgRotMin" min="5" required></label>
+          <label>Pattern<select name="bgRotMode"><option value="seq">Sequential</option><option value="shuffle">Shuffle</option></select></label>
+        </div>
+        <button type="submit">Save rotation settings</button>
+      </form>
+
+      <div class="section-divider"></div>
+      <h3>Upload background</h3>
+      <form method="POST" action="/uploadBackground" enctype="multipart/form-data">
+        <label>JPEG image<input type="file" name="bgupload" accept=".jpg,.jpeg,image/jpeg" required></label>
+        <p class="help">Images near 480×320 landscape work best. Larger images are scaled and centered by the clock.</p>
+        <button type="submit">Upload</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>System control</h2>
+      <p class="help">Reboot directly into the WiFiManager Setup Mode access point without clearing saved Wi-Fi credentials. The setup portal times out after five minutes if no configuration is saved.</p>
+      <div class="button-row">
+        <button type="button" id="rebootSetupButton" class="danger">Reboot into Setup Mode</button>
+        <span id="rebootSetupMessage" class="help"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Diagnostic logs</h2>
+      <div class="log-row">
+        <span class="log-name">Event log</span>
+        <div class="button-row">
+          <a class="button-link" href="/logs/events.log" download>Download events.log</a>
+          <form method="POST" action="/logs/clear" onsubmit="return confirm('Clear events.log? This cannot be undone.');"><button type="submit" class="danger">Clear event log</button></form>
+        </div>
+      </div>
+      <div class="log-row">
+        <span class="log-name">Battery log</span>
+        <div class="button-row">
+          <a class="button-link" href="/logs/battery.csv" download>Download battery.csv</a>
+          <form method="POST" action="/logs/battery/clear" onsubmit="return confirm('Clear battery.csv? This cannot be undone.');"><button type="submit" class="danger">Clear battery log</button></form>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/web/app.js"></script>
+</body>
+</html>
