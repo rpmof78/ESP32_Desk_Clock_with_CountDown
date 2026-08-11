@@ -11,6 +11,8 @@ Copyright (C) 2026 RPMof78
 
 ## Display screens
 
+![Preview](DeskClock_W-CountdownTimer_WaveShare_ESP32-S3-Touch-LCD-3.5/Release_Images/Desk%20Countdown%20Clock%20Web%20Page.jpg)
+
 Screen navigation is circular by touch or a short GPIO0 press:
 
 `Time-of-Day → Countdown → Days Remaining → Time-of-Day`
